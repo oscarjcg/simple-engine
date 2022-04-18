@@ -3,6 +3,7 @@ package com.example.simpleengine
 import android.content.Context
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
+import com.example.simpleengine.utils.ModelParser
 
 class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
 
@@ -11,8 +12,8 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
     private val TOUCH_SCALE_FACTOR: Float = 180.0f / 320f
     private var previousX: Float = 0f
     private var previousY: Float = 0f
-    init {
 
+    init {
         // Create an OpenGL ES 2.0 context
         setEGLContextClientVersion(2)
 
@@ -22,6 +23,12 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
         setRenderer(renderer)
         // Render the view only when there is a change in the drawing data
         renderMode = RENDERMODE_WHEN_DIRTY
+
+        val path = context.getFilesDir()
+        //Log.e("path", path.path)
+        val models =
+            arrayOf("cube.obj", "cilinder.obj", "icosphere.obj", "sphere.obj", "monkey.obj")
+        renderer.model3dData = ModelParser.parse("${path.path}/${models[0]}")
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
@@ -56,5 +63,25 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
         previousX = x
         previousY = y
         return true
+    }
+
+    fun lookUp() {
+        renderer.cameraComponent.lookUp()
+        requestRender()
+    }
+
+    fun lookDown() {
+        renderer.cameraComponent.lookDown()
+        requestRender()
+    }
+
+    fun lookLeft() {
+        renderer.cameraComponent.lookLeft()
+        requestRender()
+    }
+
+    fun lookRight() {
+        renderer.cameraComponent.lookRight()
+        requestRender()
     }
 }

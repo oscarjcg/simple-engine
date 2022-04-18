@@ -1,4 +1,4 @@
 package com.example.simpleengine.utils
 
-class Vector3(val x: Float, val y: Float, val z: Float) {
+class Vector3(var x: Float, var y: Float, var z: Float) {
 }
