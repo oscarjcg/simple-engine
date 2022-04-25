@@ -24,6 +24,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setControlsButtonsListeners() {
+        binding.goForward.setOnClickListener {
+            (gLView as MyGLSurfaceView).goForward()
+        }
+        binding.goBackward.setOnClickListener {
+            (gLView as MyGLSurfaceView).goBackward()
+        }
+
+        binding.goLeft.setOnClickListener {
+            (gLView as MyGLSurfaceView).goLeft()
+        }
+
+        binding.goRight.setOnClickListener {
+            (gLView as MyGLSurfaceView).goRight()
+        }
+
         binding.lookUp.setOnClickListener {
             (gLView as MyGLSurfaceView).lookUp()
         }

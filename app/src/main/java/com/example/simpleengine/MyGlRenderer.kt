@@ -1,10 +1,9 @@
 package com.example.simpleengine
 
-import javax.microedition.khronos.egl.EGLConfig
-import javax.microedition.khronos.opengles.GL10
-
+import android.graphics.Bitmap
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.opengl.GLUtils
 import android.opengl.Matrix
 import com.example.simpleengine.components.CameraComponent
 import com.example.simpleengine.components.WorldAxisComponent
@@ -12,6 +11,10 @@ import com.example.simpleengine.shapes.Triangle
 import com.example.simpleengine.utils.Model3dData
 import com.example.simpleengine.utils.RGBA
 import com.example.simpleengine.utils.Vector3
+import java.nio.FloatBuffer
+import javax.microedition.khronos.egl.EGLConfig
+import javax.microedition.khronos.opengles.GL10
+
 
 class MyGLRenderer : GLSurfaceView.Renderer {
 
@@ -27,6 +30,9 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
     private val rotationMatrix = FloatArray(16)
 
+    private var mTextureDataHandle: Int = 0
+    lateinit var texture: Bitmap
+
     @Volatile
     var angle: Float = 0f
     var model3dData = Model3dData()
@@ -37,13 +43,22 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         worldAxis.initComponent()
 
+        // Load the texture
+        mTextureDataHandle = loadTexture(texture)
+
+        /*
         triangle = Triangle(
             Vector3(0.0f, 0.622008459f, 0.0f),
             Vector3(-0.5f, -0.311004243f, 0.0f),
             Vector3(0.5f, -0.311004243f, 0.0f),
             RGBA(0.63671875f, 0.76953125f, 0.22265625f, 1.0f))
 
-        model3dData.buildTriangles()
+         */
+
+        model3dData.buildTriangles(mTextureDataHandle)
+
+
+        GLES20.glEnable(GLES20.GL_CULL_FACE)
     }
 
     override fun onDrawFrame(unused: GL10) {
@@ -69,7 +84,7 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         // Create a rotation transformation for the triangle
         /*val time = SystemClock.uptimeMillis() % 4000L
         val angle = 0.090f * time.toInt()*/
-        Matrix.setRotateM(rotationMatrix, 0, 0f, 0f, 0f, -1.0f)
+        Matrix.setRotateM(rotationMatrix, 0, angle, 0f, 0f, -1.0f)
 
         // Combine the rotation matrix with the projection and camera view
         // Note that the vPMatrix factor *must be first* in order
@@ -109,6 +124,40 @@ class MyGLRenderer : GLSurfaceView.Renderer {
                 GLES20.glShaderSource(shader, shaderCode)
                 GLES20.glCompileShader(shader)
             }
+        }
+
+        fun loadTexture(bitmap: Bitmap): Int {
+            val textureHandle = IntArray(1)
+            GLES20.glGenTextures(1, textureHandle, 0)
+
+            if (textureHandle[0] != 0) {
+                // Bind to the texture in OpenGL
+                GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureHandle[0])
+
+                // Set filtering
+                GLES20.glTexParameteri(
+                    GLES20.GL_TEXTURE_2D,
+                    GLES20.GL_TEXTURE_MIN_FILTER,
+                    GLES20.GL_NEAREST
+                )
+                GLES20.glTexParameteri(
+                    GLES20.GL_TEXTURE_2D,
+                    GLES20.GL_TEXTURE_MAG_FILTER,
+                    GLES20.GL_NEAREST
+                )
+
+                // Load the bitmap into the bound texture.
+                GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
+
+                // Recycle the bitmap, since its data has been loaded into OpenGL.
+                bitmap.recycle()
+            }
+
+            if (textureHandle[0] == 0) {
+                throw RuntimeException("Error loading texture.")
+            }
+
+            return textureHandle[0]
         }
     }
 }

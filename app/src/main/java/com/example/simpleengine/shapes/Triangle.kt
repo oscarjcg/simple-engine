@@ -3,6 +3,7 @@ package com.example.simpleengine.shapes
 import android.opengl.GLES20
 import com.example.simpleengine.MyGLRenderer.Companion.loadShader
 import com.example.simpleengine.utils.RGBA
+import com.example.simpleengine.utils.Vector2
 import com.example.simpleengine.utils.Vector3
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -12,33 +13,50 @@ import java.nio.FloatBuffer
 // number of coordinates per vertex in this array
 private const val COORDS_PER_VERTEX = 3
 
-class Triangle(p1: Vector3, p2: Vector3, p3: Vector3, rgba: RGBA) : IShape {
+class Triangle(p1: Vector3, p2: Vector3, p3: Vector3, vt1: Vector2, vt2: Vector2, vt3: Vector2, rgba: RGBA, texture: Int) : IShape {
     private var triangleCoords = floatArrayOf(
         p1.x, p1.y, p1.z,
         p2.x, p2.y, p2.z,
         p3.x, p3.y, p3.z,
     )
 
+    private var triangleTextureCoords = floatArrayOf(
+        vt1.x, vt1.y,
+        vt2.x, vt2.y,
+        vt3.x, vt3.y,
+    )
+
+    private var texture = texture
+
     private val vertexShaderCode =
         // This matrix member variable provides a hook to manipulate
         // the coordinates of the objects that use this vertex shader
         "uniform mat4 uMVPMatrix;" +
-            "attribute vec4 vPosition;" +
+        "attribute vec2 a_TexCoordinate;" + // Per-vertex texture coordinate information we will pass in.
+        "varying vec2 v_TexCoordinate;" +   // This will be passed into the fragment shader.
+        "attribute vec4 vPosition;" +
             "void main() {" +
+            // Pass through the texture coordinate.
+            "v_TexCoordinate = a_TexCoordinate;" +
             // the matrix must be included as a modifier of gl_Position
             // Note that the uMVPMatrix factor *must be first* in order
             // for the matrix multiplication product to be correct.
             "  gl_Position = uMVPMatrix * vPosition;" +
-            "}"
+
+    "}"
 
     // Use to access and set the view transformation
     private var vPMatrixHandle: Int = 0
 
     private val fragmentShaderCode =
         "precision mediump float;" +
-            "uniform vec4 vColor;" +
+        "uniform sampler2D u_Texture;" +    // The input texture.
+        "varying vec2 v_TexCoordinate;" + // Interpolated texture coordinate per fragment.
+        "uniform vec4 vColor;" +
             "void main() {" +
-            "  gl_FragColor = vColor;" +
+            //"  gl_FragColor = vColor;" +
+            // Multiply the color by the texture value to get final output color.
+            "gl_FragColor = texture2D(u_Texture, v_TexCoordinate);" +
             "}"
 
     // Set color with red, green, blue and alpha (opacity) values
@@ -54,6 +72,21 @@ class Triangle(p1: Vector3, p2: Vector3, p3: Vector3, rgba: RGBA) : IShape {
             asFloatBuffer().apply {
                 // add the coordinates to the FloatBuffer
                 put(triangleCoords)
+                // set the buffer to read the first coordinate
+                position(0)
+            }
+        }
+
+    private var uvBuffer: FloatBuffer =
+        // (number of coordinate values * 4 bytes per float)
+        ByteBuffer.allocateDirect(triangleTextureCoords.size * 4).run {
+            // use the device hardware's native byte order
+            order(ByteOrder.nativeOrder())
+
+            // create a floating point buffer from the ByteBuffer
+            asFloatBuffer().apply {
+                // add the coordinates to the FloatBuffer
+                put(triangleTextureCoords)
                 // set the buffer to read the first coordinate
                 position(0)
             }
@@ -90,6 +123,30 @@ class Triangle(p1: Vector3, p2: Vector3, p3: Vector3, rgba: RGBA) : IShape {
         // Add program to OpenGL ES environment
         GLES20.glUseProgram(mProgram)
 
+        val a_texCoord = GLES20.glGetAttribLocation(mProgram, "a_TexCoordinate")
+        val u_texture = GLES20.glGetUniformLocation(mProgram, "u_Texture")
+
+        // Set the active texture unit to texture unit 0.
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+
+        GLES20.glEnableVertexAttribArray(a_texCoord)
+        GLES20.glEnableVertexAttribArray(u_texture)
+
+        // Prepare the texture coordinates
+        GLES20.glVertexAttribPointer(a_texCoord, 2, GLES20.GL_FLOAT, false, 0, uvBuffer)
+
+        // Set the sampler texture unit to where we have saved the texture.
+        // second param is the active texture index
+        GLES20.glUniform1i(u_texture, 0)
+
+
+        // get handle to fragment shader's vColor member
+        mColorHandle = GLES20.glGetUniformLocation(mProgram, "vColor").also { colorHandle ->
+
+            // Set color for drawing the triangle
+            GLES20.glUniform4fv(colorHandle, 1, color, 0)
+        }
+
         // get handle to vertex shader's vPosition member
         positionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition").also {
 
@@ -105,13 +162,6 @@ class Triangle(p1: Vector3, p2: Vector3, p3: Vector3, rgba: RGBA) : IShape {
                 vertexStride,
                 vertexBuffer
             )
-
-            // get handle to fragment shader's vColor member
-            mColorHandle = GLES20.glGetUniformLocation(mProgram, "vColor").also { colorHandle ->
-
-                // Set color for drawing the triangle
-                GLES20.glUniform4fv(colorHandle, 1, color, 0)
-            }
 
             // get handle to shape's transformation matrix
             vPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix")

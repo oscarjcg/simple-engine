@@ -1,6 +1,8 @@
 package com.example.simpleengine
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.opengl.GLSurfaceView
 import android.view.MotionEvent
 import com.example.simpleengine.utils.ModelParser
@@ -29,6 +31,14 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
         val models =
             arrayOf("cube.obj", "cilinder.obj", "icosphere.obj", "sphere.obj", "monkey.obj")
         renderer.model3dData = ModelParser.parse("${path.path}/${models[0]}")
+
+        renderer.texture = getResourceTexture(R.drawable.wood)
+    }
+
+    private fun getResourceTexture(id: Int): Bitmap {
+        val options = BitmapFactory.Options()
+        options.inScaled = false // No pre-scaling
+        return BitmapFactory.decodeResource(getResources(), id, options)
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
@@ -63,6 +73,26 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
         previousX = x
         previousY = y
         return true
+    }
+
+    fun goForward() {
+        renderer.cameraComponent.goForward()
+        requestRender()
+    }
+
+    fun goBackward() {
+        renderer.cameraComponent.goBackward()
+        requestRender()
+    }
+
+    fun goLeft() {
+        renderer.cameraComponent.goLeft()
+        requestRender()
+    }
+
+    fun goRight() {
+        renderer.cameraComponent.goRight()
+        requestRender()
     }
 
     fun lookUp() {
