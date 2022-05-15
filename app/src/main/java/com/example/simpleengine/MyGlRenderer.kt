@@ -5,20 +5,20 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.GLUtils
 import android.opengl.Matrix
+import android.os.SystemClock
+import android.util.Log
 import com.example.simpleengine.components.CameraComponent
 import com.example.simpleengine.components.WorldAxisComponent
+import com.example.simpleengine.shapes.Line
 import com.example.simpleengine.shapes.Triangle
 import com.example.simpleengine.utils.Model3dData
 import com.example.simpleengine.utils.RGBA
 import com.example.simpleengine.utils.Vector3
-import java.nio.FloatBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
 
 class MyGLRenderer : GLSurfaceView.Renderer {
-
-    private lateinit var triangle: Triangle
 
     var cameraComponent = CameraComponent()
     var worldAxis = WorldAxisComponent()
@@ -27,6 +27,22 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     private val vPMatrix = FloatArray(16)
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
+
+    /** Used to hold a light centered on the origin in model space.
+     * We need a 4th coordinate so we can get translations to work when
+     * we multiply this by our transformation matrices.  */
+    private val mLightPosInModelSpace = floatArrayOf(0.0f, 0.0f, 0.0f, 1.0f)
+    /** Used to hold the transformed position of the light in eye space
+     * (after transformation via modelview matrix)  */
+    private val mLightPosInEyeSpace = FloatArray(4)
+    /** Used to hold the current position of the light in world space
+     * (after transformation via model matrix).  */
+    private val mLightPosInWorldSpace = FloatArray(4)
+
+    /**
+     * Stores a copy of the model matrix specifically for the light position.
+     */
+    private val mLightModelMatrix = FloatArray(16)
 
     private val rotationMatrix = FloatArray(16)
 
@@ -37,6 +53,8 @@ class MyGLRenderer : GLSurfaceView.Renderer {
     var angle: Float = 0f
     var model3dData = Model3dData()
 
+    var lineLight = Line(Vector3(0f, 0f, 0f), Vector3(0f, 0f, 0f), RGBA(1f, 0f, 0f, 1f))
+
     override fun onSurfaceCreated(unused: GL10, config: EGLConfig) {
         // Set the background frame color
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
@@ -45,15 +63,6 @@ class MyGLRenderer : GLSurfaceView.Renderer {
 
         // Load the texture
         mTextureDataHandle = loadTexture(texture)
-
-        /*
-        triangle = Triangle(
-            Vector3(0.0f, 0.622008459f, 0.0f),
-            Vector3(-0.5f, -0.311004243f, 0.0f),
-            Vector3(0.5f, -0.311004243f, 0.0f),
-            RGBA(0.63671875f, 0.76953125f, 0.22265625f, 1.0f))
-
-         */
 
         model3dData.buildTriangles(mTextureDataHandle)
 
@@ -76,9 +85,6 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         // Calculate the projection and view transformation
         Matrix.multiplyMM(vPMatrix, 0, projectionMatrix, 0, viewMatrix, 0)
 
-        // Draw shape
-        //mTriangle.draw(vPMatrix)
-
         val scratch = FloatArray(16)
 
         // Create a rotation transformation for the triangle
@@ -91,13 +97,23 @@ class MyGLRenderer : GLSurfaceView.Renderer {
         // for the matrix multiplication product to be correct.
         Matrix.multiplyMM(scratch, 0, vPMatrix, 0, rotationMatrix, 0)
 
-        // Draw triangle
-        //triangle.draw(scratch)
+        // Calculate position of the light
+        Matrix.setIdentityM(mLightModelMatrix, 0)
+        Matrix.translateM(mLightModelMatrix, 0, 0.0f, 3.0f, 5.0f)
+
+        Matrix.multiplyMV(mLightPosInWorldSpace, 0, mLightModelMatrix, 0, mLightPosInModelSpace, 0)
+        Matrix.multiplyMV(mLightPosInEyeSpace, 0, viewMatrix, 0, mLightPosInWorldSpace, 0)
+
+        lineLight = Line(
+            Vector3(0f, 0f, 0f),
+            Vector3(mLightPosInWorldSpace[0], mLightPosInWorldSpace[1], mLightPosInWorldSpace[2]),
+            RGBA(1f, 1f, 1f, 1f))
 
         // Draw stores triangles
-        model3dData.draw(scratch)
+        model3dData.draw(scratch, vPMatrix, mLightPosInEyeSpace)
 
-        worldAxis.draw(scratch)
+        worldAxis.draw(scratch, vPMatrix, mLightPosInEyeSpace)
+        lineLight.draw(scratch, vPMatrix, mLightPosInEyeSpace)
     }
 
     override fun onSurfaceChanged(unused: GL10, width: Int, height: Int) {

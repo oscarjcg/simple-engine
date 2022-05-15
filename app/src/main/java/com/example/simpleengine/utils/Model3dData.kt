@@ -25,16 +25,20 @@ class Model3dData {
                         vertexTextureList[face.vertexTextureIndexList[0]-1],
                         vertexTextureList[face.vertexTextureIndexList[i]-1],
                         vertexTextureList[face.vertexTextureIndexList[i+1]-1],
-                        rgba, texture)
+                        vertexNormalList[face.vertexNormalIndexList[0]-1],
+                        vertexNormalList[face.vertexNormalIndexList[i]-1],
+                        vertexNormalList[face.vertexNormalIndexList[i+1]-1],
+                        rgba, texture
+                    )
                 )
         }
         return triangles
     }
 
-    fun draw(mvpMatrix: FloatArray) {
+    fun draw(mvpMatrix: FloatArray, mvMatrix: FloatArray, lightPosInEyeSpace: FloatArray) {
         if (triangles.size > 0) {
             triangles.forEach {
-                it.draw(mvpMatrix)
+                it.draw(mvpMatrix, mvMatrix, lightPosInEyeSpace)
             }
         }
     }

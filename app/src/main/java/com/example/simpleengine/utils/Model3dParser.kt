@@ -31,6 +31,7 @@ class ModelParser {
                             val components = values[i].split("/")
                             faceModel3d.vertexIndexList.add(components[0].toInt())
                             faceModel3d.vertexTextureIndexList.add(components[1].toInt())
+                            faceModel3d.vertexNormalIndexList.add(components[2].toInt())
                         }
                         model3dData.faceList.add(faceModel3d)
                     }

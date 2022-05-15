@@ -22,9 +22,9 @@ class WorldAxisComponent {
         zAxis = Line(origin, zCoor, blue)
     }
 
-    fun draw(mvpMatrix: FloatArray) {
-        xAxis.draw(mvpMatrix)
-        yAxis.draw(mvpMatrix)
-        zAxis.draw(mvpMatrix)
+    fun draw(mvpMatrix: FloatArray, mvMatrix: FloatArray, lightPosInEyeSpace: FloatArray) {
+        xAxis.draw(mvpMatrix, mvMatrix, lightPosInEyeSpace)
+        yAxis.draw(mvpMatrix, mvMatrix, lightPosInEyeSpace)
+        zAxis.draw(mvpMatrix, mvMatrix, lightPosInEyeSpace)
     }
 }

@@ -85,7 +85,7 @@ class Line
     private val vertexCount: Int = lineCoords.size / COORDS_PER_VERTEX
     private val vertexStride: Int = COORDS_PER_VERTEX * 4 // 4 bytes per vertex
 
-    override fun draw(mvpMatrix: FloatArray) {
+    override fun draw(mvpMatrix: FloatArray, mvMatrix: FloatArray, lightPosInEyeSpace: FloatArray) {
         // Add program to OpenGL ES environment
         GLES20.glUseProgram(mProgram)
 

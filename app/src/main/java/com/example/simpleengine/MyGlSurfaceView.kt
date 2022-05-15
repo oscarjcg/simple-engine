@@ -24,7 +24,7 @@ class MyGLSurfaceView(context: Context) : GLSurfaceView(context) {
         // Set the Renderer for drawing on the GLSurfaceView
         setRenderer(renderer)
         // Render the view only when there is a change in the drawing data
-        renderMode = RENDERMODE_WHEN_DIRTY
+        //renderMode = RENDERMODE_WHEN_DIRTY
 
         val path = context.getFilesDir()
         //Log.e("path", path.path)
